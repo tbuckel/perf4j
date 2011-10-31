@@ -159,6 +159,10 @@ public class GroupedTimingStatistics implements Serializable, Cloneable {
 
     // --- Helper Methods ---
 
+    public Set<String> getTags() {
+        return this.statisticsByTag.keySet();
+    }
+
     private void addStopWatchToStatsByTag(String tag, StopWatch stopWatch) {
         TimingStatistics stats = statisticsByTag.get(tag);
         if (stats == null) {

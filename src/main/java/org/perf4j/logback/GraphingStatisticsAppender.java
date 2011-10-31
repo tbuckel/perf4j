@@ -15,23 +15,6 @@
  */
 package org.perf4j.logback;
 
-import java.io.Flushable;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
-import org.perf4j.GroupedTimingStatistics;
-import org.perf4j.StopWatch;
-import org.perf4j.chart.GoogleChartGenerator;
-import org.perf4j.chart.StatisticsChartGenerator;
-import org.perf4j.helpers.MiscUtils;
-import org.perf4j.helpers.StatsValueRetriever;
-import org.slf4j.LoggerFactory;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.LoggingEvent;
@@ -39,6 +22,17 @@ import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.AppenderBase;
 import ch.qos.logback.core.spi.AppenderAttachable;
 import ch.qos.logback.core.spi.AppenderAttachableImpl;
+import org.perf4j.GroupedTimingStatistics;
+import org.perf4j.StopWatch;
+import org.perf4j.chart.GoogleChartGenerator;
+import org.perf4j.chart.StatisticsChartGenerator;
+import org.perf4j.helpers.MiscUtils;
+import org.perf4j.helpers.StatsValueRetriever;
+import org.slf4j.LoggerFactory;
+
+import java.io.Flushable;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 
 
 /**
@@ -66,7 +60,7 @@ public class GraphingStatisticsAppender extends AppenderBase<LoggingEvent>
      * constant name from the {@link org.perf4j.helpers.StatsValueRetriever} class, such as Mean, Min, Max, Count,
      * StdDev or TPS.
      */
-    private String graphType = StatsValueRetriever.MEAN_VALUE_RETRIEVER.getValueName();
+    private String graphType = StatsValueRetriever.MEAN.getValueName();
 
     /**
      * A comma-separated list of the tag names that should be graphed. If not set then a separate series will be

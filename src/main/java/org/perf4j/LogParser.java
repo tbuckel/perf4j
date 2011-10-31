@@ -143,7 +143,7 @@ public class LogParser {
     }
 
     protected StatisticsChartGenerator newTpsChartGenerator() {
-        return new GoogleChartGenerator(StatsValueRetriever.TPS_VALUE_RETRIEVER);
+        return new GoogleChartGenerator(StatsValueRetriever.TPS);
     }
 
     protected void printGraphOutput() {

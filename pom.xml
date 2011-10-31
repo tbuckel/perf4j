@@ -279,8 +279,8 @@
         <!-- if you use Spring to manage the AOP funcionality, you must also include these following dependencies -->
         <dependency>
             <groupId>org.springframework</groupId>
-            <artifactId>spring</artifactId>
-            <version>2.0.6</version>
+            <artifactId>spring-context</artifactId>
+            <version>2.5.6</version>
             <scope>compile</scope>
             <optional>true</optional>
         </dependency>
@@ -297,14 +297,14 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>3.8.1</version>
+            <version>4.8.1</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.springframework</groupId>
-            <artifactId>spring-mock</artifactId>
-            <version>2.0.6</version>
+            <artifactId>spring-test</artifactId>
+            <version>2.5.6</version>
             <scope>test</scope>
         </dependency>
 
@@ -423,7 +423,7 @@
                                 <exec executable="git" output="${project.build.directory}/version.properties">
                                     <arg value="log" />
                                     <arg value="-1" />
-                                    <arg value="--pretty=perf4j.revision=%H" />
+                                    <arg value="- -pretty=perf4j.revision=%H" />
                                 </exec>
                                 <echo file="${project.build.directory}/version.properties" append="true">
                                     perf4j.version=${project.version}

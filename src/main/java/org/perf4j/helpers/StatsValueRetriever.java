@@ -17,9 +17,9 @@ package org.perf4j.helpers;
 
 import org.perf4j.TimingStatistics;
 
-import java.util.Map;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * The StatsValueRetriever is used to enable retrieval of any of the statistics on the TimingStatistics object
@@ -27,8 +27,9 @@ import java.util.LinkedHashMap;
  *
  * @author Alex Devine
  */
-public abstract class StatsValueRetriever {
-    public static final StatsValueRetriever MEAN_VALUE_RETRIEVER = new StatsValueRetriever() {
+public enum StatsValueRetriever {
+
+    MEAN() {
         public Number getStatsValue(TimingStatistics timingStats, long windowLength) {
             return (timingStats == null) ? 0.0 : timingStats.getMean();
         }
@@ -36,9 +37,8 @@ public abstract class StatsValueRetriever {
         public Class getValueClass() { return Double.class; }
 
         public String getValueName() { return "Mean"; }
-    };
-
-    public static final StatsValueRetriever STD_DEV_VALUE_RETRIEVER = new StatsValueRetriever() {
+    },
+    STD_DEV() {
         public Number getStatsValue(TimingStatistics timingStats, long windowLength) {
             return (timingStats == null) ? 0.0 : timingStats.getStandardDeviation();
         }
@@ -46,9 +46,8 @@ public abstract class StatsValueRetriever {
         public Class getValueClass() { return Double.class; }
 
         public String getValueName() { return "StdDev"; }
-    };
-
-    public static final StatsValueRetriever MIN_VALUE_RETRIEVER = new StatsValueRetriever() {
+    },
+    MIN() {
         public Number getStatsValue(TimingStatistics timingStats, long windowLength) {
             return (timingStats == null) ? 0L : timingStats.getMin();
         }
@@ -56,9 +55,8 @@ public abstract class StatsValueRetriever {
         public Class getValueClass() { return Long.class; }
 
         public String getValueName() { return "Min"; }
-    };
-
-    public static final StatsValueRetriever MAX_VALUE_RETRIEVER = new StatsValueRetriever() {
+    },
+    MAX() {
         public Number getStatsValue(TimingStatistics timingStats, long windowLength) {
             return (timingStats == null) ? 0L : timingStats.getMax();
         }
@@ -66,9 +64,8 @@ public abstract class StatsValueRetriever {
         public Class getValueClass() { return Long.class; }
 
         public String getValueName() { return "Max"; }
-    };
-
-    public static final StatsValueRetriever COUNT_VALUE_RETRIEVER = new StatsValueRetriever() {
+    },
+    COUNT() {
         public Number getStatsValue(TimingStatistics timingStats, long windowLength) {
             return (timingStats == null) ? 0 : timingStats.getCount();
         }
@@ -76,9 +73,8 @@ public abstract class StatsValueRetriever {
         public Class getValueClass() { return Integer.class; }
 
         public String getValueName() { return "Count"; }
-    };
-
-    public static final StatsValueRetriever TPS_VALUE_RETRIEVER = new StatsValueRetriever() {
+    },
+    TPS() {
         public Number getStatsValue(TimingStatistics timingStats, long windowLength) {
             return (timingStats == null || windowLength == 0) ?
                    0.0 :
@@ -97,12 +93,9 @@ public abstract class StatsValueRetriever {
     public static final Map<String, StatsValueRetriever> DEFAULT_RETRIEVERS;
     static {
         Map<String, StatsValueRetriever> defaultRetrievers = new LinkedHashMap<String, StatsValueRetriever>();
-        defaultRetrievers.put(MEAN_VALUE_RETRIEVER.getValueName(), MEAN_VALUE_RETRIEVER);
-        defaultRetrievers.put(STD_DEV_VALUE_RETRIEVER.getValueName(), STD_DEV_VALUE_RETRIEVER);
-        defaultRetrievers.put(MIN_VALUE_RETRIEVER.getValueName(), MIN_VALUE_RETRIEVER);
-        defaultRetrievers.put(MAX_VALUE_RETRIEVER.getValueName(), MAX_VALUE_RETRIEVER);
-        defaultRetrievers.put(COUNT_VALUE_RETRIEVER.getValueName(), COUNT_VALUE_RETRIEVER);
-        defaultRetrievers.put(TPS_VALUE_RETRIEVER.getValueName(), TPS_VALUE_RETRIEVER);
+        for (StatsValueRetriever statsValueRetriever : StatsValueRetriever.values()) {
+            defaultRetrievers.put(statsValueRetriever.getValueName(), statsValueRetriever);
+        }
         DEFAULT_RETRIEVERS = Collections.unmodifiableMap(defaultRetrievers);
     }
 

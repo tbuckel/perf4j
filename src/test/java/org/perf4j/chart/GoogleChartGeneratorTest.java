@@ -75,7 +75,7 @@ public class GoogleChartGeneratorTest extends TestCase {
 
     public void testTwoSeriesThreeDataPoints() throws Exception {
         GoogleChartGenerator chart = new GoogleChartGenerator();
-        GoogleChartGenerator tpsChart = new GoogleChartGenerator(StatsValueRetriever.TPS_VALUE_RETRIEVER);
+        GoogleChartGenerator tpsChart = new GoogleChartGenerator(StatsValueRetriever.TPS);
 
         StopWatch watch1 = new StopWatch(START_TIME + 2000L, 2000L, "tag1", null);
         StopWatch watch2 = new StopWatch(START_TIME + 2000L, 1000L, "tag2", null);

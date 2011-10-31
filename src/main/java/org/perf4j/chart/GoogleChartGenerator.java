@@ -83,7 +83,7 @@ public class GoogleChartGenerator implements StatisticsChartGenerator {
      * Default constructor creates a chart that displays mean execution values and uses the default Google Chart URL.
      */
     public GoogleChartGenerator() {
-        this(StatsValueRetriever.MEAN_VALUE_RETRIEVER, DEFAULT_BASE_URL);
+        this(StatsValueRetriever.MEAN, DEFAULT_BASE_URL);
     }
 
     /**

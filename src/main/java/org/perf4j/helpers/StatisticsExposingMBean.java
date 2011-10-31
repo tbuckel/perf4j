@@ -78,21 +78,44 @@ public class StatisticsExposingMBean extends NotificationBroadcasterSupport impl
      * Pattern used to parse requested attribute names into the tag name and the statistic name
      */
     protected Pattern attributeNamePattern = Pattern.compile("(.*)(Mean|StdDev|Min|Max|Count|TPS)");
+    /**
+     * Whether stats for tags are automatically exposed
+     */
+    protected boolean exposeTagsAutomatically = false;
 
     /**
      * Creates a new StatisticsExposingMBean whose management interface exposes performance attributes for the tags
      * specified, and that sends notifications if attributes are outside of the acceptable ranges.
      *
-     * @param mBeanName        The name under which this MBean is registered in the MBean server
-     * @param tagsToExpose     The names of the tags whose statistics should exposed. For each tag specified there will
-     *                         be 6 attributes whose getters are exposed: tagNameMean, tagNameStdDev, tagNameMin,
-     *                         tagNameMax, and tagNameCount and tagNameTPS
-     * @param acceptableRanges These acceptable ranges are used to send notifications if any of the monitored
-     *                         attributes go outside of the range.
+     * @param mBeanName               The name under which this MBean is registered in the MBean server
+     * @param tagsToExpose            The names of the tags whose statistics should exposed. For each tag specified there will
+     *                                be 6 attributes whose getters are exposed: tagNameMean, tagNameStdDev, tagNameMin,
+     *                                tagNameMax, and tagNameCount and tagNameTPS
+     * @param acceptableRanges        These acceptable ranges are used to send notifications if any of the monitored
+     *                                attributes go outside of the range.
      */
     public StatisticsExposingMBean(String mBeanName,
                                    Collection<String> tagsToExpose,
                                    Collection<AcceptableRangeConfiguration> acceptableRanges) {
+        this(mBeanName, tagsToExpose, acceptableRanges, false);
+    }
+
+    /**
+     * Creates a new StatisticsExposingMBean whose management interface exposes performance attributes for the tags
+     * specified, and that sends notifications if attributes are outside of the acceptable ranges.
+     *
+     * @param mBeanName               The name under which this MBean is registered in the MBean server
+     * @param tagsToExpose            The names of the tags whose statistics should exposed. For each tag specified there will
+     *                                be 6 attributes whose getters are exposed: tagNameMean, tagNameStdDev, tagNameMin,
+     *                                tagNameMax, and tagNameCount and tagNameTPS
+     * @param acceptableRanges        These acceptable ranges are used to send notifications if any of the monitored
+     *                                attributes go outside of the range.
+     * @param exposeTagsAutomatically Whether stats of all tagNames should be exposed automatically.
+     */
+    public StatisticsExposingMBean(String mBeanName,
+                                   Collection<String> tagsToExpose,
+                                   Collection<AcceptableRangeConfiguration> acceptableRanges,
+                                   boolean exposeTagsAutomatically) {
         //set mBeanName
         if (mBeanName == null) {
             mBeanName = DEFAULT_MBEAN_NAME;
@@ -127,6 +150,8 @@ public class StatisticsExposingMBean extends NotificationBroadcasterSupport impl
         this.managementInterface = createMBeanInfoFromTagNames(tagsToExpose);
 
         this.currentTimingStatistics = new GroupedTimingStatistics(); //just set empty so it's never null
+
+        this.exposeTagsAutomatically = exposeTagsAutomatically;
     }
 
     /**
@@ -140,8 +165,22 @@ public class StatisticsExposingMBean extends NotificationBroadcasterSupport impl
             throw new IllegalArgumentException("timing statistics may not be null");
         }
         this.currentTimingStatistics = currentTimingStatistics;
+        if (exposeTagsAutomatically) {
+            exposeUnexposedTags();
+        }
 
         sendNotificationsIfValuesNotAcceptable();
+    }
+
+    /**
+     * Expose any unexposed tagNames as JMX
+     */
+    protected void exposeUnexposedTags() {
+        for (String tagName : this.currentTimingStatistics.getTags()) {
+            if (!isTagExposed(tagName)) {
+                exposeTag(tagName);
+            }
+        }
     }
 
     /**
@@ -155,6 +194,10 @@ public class StatisticsExposingMBean extends NotificationBroadcasterSupport impl
         this.managementInterface = createMBeanInfoFromTagNames(this.tagsToExpose);
     }
 
+    public boolean isTagExposed(String tagName) {
+        return this.tagsToExpose.contains(tagName);
+    }
+
     /**
      * This MBean operation method allows the caller to remove, at runtime, a tag whose statistics are exposed.
      *
@@ -165,6 +208,22 @@ public class StatisticsExposingMBean extends NotificationBroadcasterSupport impl
         boolean retVal = this.tagsToExpose.remove(tagName);
         this.managementInterface = createMBeanInfoFromTagNames(this.tagsToExpose);
         return retVal;
+    }
+
+    /**
+     * @return Whether statistics for tags are exposed automatically as soon as statistics are available
+     */
+    public boolean isExposeTagsAutomatically() {
+        return exposeTagsAutomatically;
+    }
+
+    /**
+     * Whether stats of all tagNames should be exposed automatically.
+     *
+     * @param exposeTagsAutomatically Whether stats of all tagNames should be exposed automatically.
+     */
+    public void setExposeTagsAutomatically(boolean exposeTagsAutomatically) {
+        this.exposeTagsAutomatically = exposeTagsAutomatically;
     }
 
     public synchronized Object getAttribute(String attribute)

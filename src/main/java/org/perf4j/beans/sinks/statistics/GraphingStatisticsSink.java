@@ -1,4 +1,5 @@
 /* Copyright (c) 2008-2009 HomeAway, Inc.
+ * Copyright (c) 2011 Thomas Buckel
  * All rights reserved.  http://www.perf4j.org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,42 +14,41 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.perf4j.log4j;
+package org.perf4j.beans.sinks.statistics;
 
-import org.apache.log4j.Appender;
-import org.apache.log4j.AppenderSkeleton;
-import org.apache.log4j.Logger;
-import org.apache.log4j.Level;
-import org.apache.log4j.helpers.AppenderAttachableImpl;
-import org.apache.log4j.spi.AppenderAttachable;
-import org.apache.log4j.spi.LoggingEvent;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.perf4j.GroupedTimingStatistics;
-import org.perf4j.StopWatch;
+import org.perf4j.beans.sinks.TimingStatisticsSink;
 import org.perf4j.chart.GoogleChartGenerator;
 import org.perf4j.chart.StatisticsChartGenerator;
 import org.perf4j.helpers.StatsValueRetriever;
-import org.perf4j.helpers.MiscUtils;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
-import java.io.Flushable;
 
 /**
- * This appender is designed to be attached to an {@link AsyncCoalescingStatisticsAppender}. It takes the incoming
- * GroupedTimingStatistics log messages and uses this data to update a graphical view of the logged statistics. If
- * ANOTHER appender is then attached to this appender then the graph URLs will be written to the appender on a scheduled
- * basis. Alternatively, the graph can be viewed by setting up a
- * {@link org.perf4j.log4j.servlet.GraphingServlet} to expose the graph images.
+ * A {@code TimingStatisticsSink} that takes the incoming GroupedTimingStatistics event and uses this data to update
+ * a graphical view of the logged statistics.
+ *
+ * TODO Clarify on this: If ANOTHER appender is then attached to this appender then the graph URLs will be written to the appender on a scheduled basis.
+ *
+ * Alternatively, the graph can be viewed by setting up a {@link org.perf4j.beans.servlet.ClassicGraphingServlet} or
+ * {@link org.perf4j.beans.servlet.SpringGraphingServlet} to expose the graph images.
  *
  * @author Alex Devine
+ * @author Thomas Buckel
  */
-public class GraphingStatisticsAppender extends AppenderSkeleton implements AppenderAttachable, Flushable {
+public class GraphingStatisticsSink implements TimingStatisticsSink {
+
+    private final Log log = LogFactory.getLog(getClass());
+
     /**
      * This class keeps track of all appenders of this type that have been created. This allows static access to
      * the appenders from the org.perf4j.log4j.servlet.GraphingServlet class.
      */
-    protected final static Map<String, GraphingStatisticsAppender> APPENDERS_BY_NAME =
-            Collections.synchronizedMap(new LinkedHashMap<String, GraphingStatisticsAppender>());
+    protected final static Map<String, GraphingStatisticsSink> SINKS_BY_NAME =
+            Collections.synchronizedMap(new LinkedHashMap<String, GraphingStatisticsSink>());
 
     // --- configuration options ---
     /**
@@ -56,12 +56,12 @@ public class GraphingStatisticsAppender extends AppenderSkeleton implements Appe
      * constant name from the {@link org.perf4j.helpers.StatsValueRetriever} class, such as Mean, Min, Max, Count,
      * StdDev or TPS.
      */
-    private String graphType = StatsValueRetriever.MEAN.getValueName();
+    private StatsValueRetriever graphType = StatsValueRetriever.MEAN;
     /**
-     * A comma-separated list of the tag names that should be graphed. If not set then a separate series will be
+     * A set of the tag names that should be graphed. If not set then a separate series will be
      * displayed on the graph for each tag name logged.
      */
-    private String tagNamesToGraph = null;
+    private Set<String> tagNamesToGraph = null;
     /**
      * Gets the number of data points that will be written on each graph before the graph URL is written to any
      * attached appenders. Thus, this option is only relevant if there are attached appenders.
@@ -69,29 +69,66 @@ public class GraphingStatisticsAppender extends AppenderSkeleton implements Appe
      */
     private int dataPointsPerGraph = StatisticsChartGenerator.DEFAULT_MAX_DATA_POINTS;
 
+    /** Name of the Graph */
+    private String name;
+
     // --- contained objects/state variables ---
     /**
      * The chart genertor, initialized in the <tt>activateOptions</tt> method, that stores the data for the chart.
      */
     private StatisticsChartGenerator chartGenerator;
+
     /**
      * Keeps track of the number of logged GroupedTimingStatistics, which is used to determine when a graph should
      * be written to any attached appenders.
      */
     private AtomicLong numLoggedStatistics = new AtomicLong();
+
     /**
      * Keeps track of whether there is existing data that hasn't yet been flushed to downstream appenders.
      */
     private volatile boolean hasUnflushedData = false;
-    /**
-     * Keeps track of the Level of the last appended event. This is just used to determine what level we send to OUR
-     * downstream events.
-     */
-    private Level lastAppendedEventLevel = Level.INFO;
-    /**
-     * Any downstream appenders are contained in this AppenderAttachableImpl
-     */
-    private final AppenderAttachableImpl downstreamAppenders = new AppenderAttachableImpl();
+
+    private boolean logGraphUrls = true;
+
+    public GraphingStatisticsSink() {
+    }
+
+    public GraphingStatisticsSink(StatsValueRetriever graphType, String... tagNamesToGraph) {
+        this(null, graphType, StatisticsChartGenerator.DEFAULT_MAX_DATA_POINTS, tagNamesToGraph);
+    }
+
+    public GraphingStatisticsSink(StatsValueRetriever graphType, int dataPointsPerGraph, String... tagNamesToGraph) {
+        this(null, graphType, dataPointsPerGraph, tagNamesToGraph);
+    }
+
+    public GraphingStatisticsSink(StatsValueRetriever graphType, boolean logGraphUrls, String... tagNamesToGraph) {
+        this(null, graphType, StatisticsChartGenerator.DEFAULT_MAX_DATA_POINTS, logGraphUrls, tagNamesToGraph);
+    }
+
+    public GraphingStatisticsSink(StatsValueRetriever graphType, int dataPointsPerGraph, boolean logGraphUrls, String... tagNamesToGraph) {
+        this(null, graphType, dataPointsPerGraph, tagNamesToGraph);
+    }
+
+    public GraphingStatisticsSink(String name, StatsValueRetriever graphType, String... tagNamesToGraph) {
+        this(name, graphType, StatisticsChartGenerator.DEFAULT_MAX_DATA_POINTS, tagNamesToGraph);
+    }
+
+    public GraphingStatisticsSink(String name, StatsValueRetriever graphType, int dataPointsPerGraph, String... tagNamesToGraph) {
+        this(name, graphType, dataPointsPerGraph, true, tagNamesToGraph);
+    }
+
+    public GraphingStatisticsSink(String name, StatsValueRetriever graphType, boolean logGraphUrls, String... tagNamesToGraph) {
+        this(name, graphType, StatisticsChartGenerator.DEFAULT_MAX_DATA_POINTS, logGraphUrls, tagNamesToGraph);
+    }
+
+    public GraphingStatisticsSink(String name, StatsValueRetriever graphType, int dataPointsPerGraph, boolean logGraphUrls, String... tagNamesToGraph) {
+        this.name = name;
+        this.graphType = graphType;
+        this.dataPointsPerGraph = dataPointsPerGraph;
+        this.logGraphUrls = logGraphUrls;
+        this.tagNamesToGraph = new HashSet<String>(Arrays.asList(tagNamesToGraph));
+    }
 
     // --- options ---
 
@@ -102,7 +139,7 @@ public class GraphingStatisticsAppender extends AppenderSkeleton implements Appe
      *
      * @return The value of the GraphType option
      */
-    public String getGraphType() {
+    public StatsValueRetriever getGraphType() {
         return graphType;
     }
 
@@ -112,7 +149,7 @@ public class GraphingStatisticsAppender extends AppenderSkeleton implements Appe
      *
      * @param graphType The new value for the GraphType option.
      */
-    public void setGraphType(String graphType) {
+    public void setGraphType(StatsValueRetriever graphType) {
         this.graphType = graphType;
     }
 
@@ -122,7 +159,7 @@ public class GraphingStatisticsAppender extends AppenderSkeleton implements Appe
      *
      * @return The value of the TagNamesToGraph option
      */
-    public String getTagNamesToGraph() {
+    public Set<String> getTagNamesToGraph() {
         return tagNamesToGraph;
     }
 
@@ -131,7 +168,7 @@ public class GraphingStatisticsAppender extends AppenderSkeleton implements Appe
      *
      * @param tagNamesToGraph The new value for the TagNamesToGraph option.
      */
-    public void setTagNamesToGraph(String tagNamesToGraph) {
+    public void setTagNamesToGraph(Set<String> tagNamesToGraph) {
         this.tagNamesToGraph = tagNamesToGraph;
     }
 
@@ -157,12 +194,28 @@ public class GraphingStatisticsAppender extends AppenderSkeleton implements Appe
         this.dataPointsPerGraph = dataPointsPerGraph;
     }
 
-    public void activateOptions() {
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public boolean isLogGraphUrls() {
+        return logGraphUrls;
+    }
+
+    public void setLogGraphUrls(boolean logGraphUrls) {
+        this.logGraphUrls = logGraphUrls;
+    }
+
+    public void start() {
         chartGenerator = createChartGenerator();
 
-        //update the static APPENDERS_BY_NAME object
+        //update the static SINKS_BY_NAME object
         if (getName() != null) {
-            APPENDERS_BY_NAME.put(getName(), this);
+            SINKS_BY_NAME.put(getName(), this);
         }
     }
 
@@ -174,18 +227,14 @@ public class GraphingStatisticsAppender extends AppenderSkeleton implements Appe
      * @return A newly created StatisticsChartGenerator.
      */
     protected StatisticsChartGenerator createChartGenerator() {
-        StatsValueRetriever statsValueRetriever = StatsValueRetriever.DEFAULT_RETRIEVERS.get(getGraphType());
-        if (statsValueRetriever == null) {
-            throw new RuntimeException("Unknown GraphType: " + getGraphType() +
-                                       ". See the StatsValueRetriever class for the list of acceptable types.");
+        if (graphType == null) {
+            throw new RuntimeException("graphType is not set.");
         }
 
         //create the chart generator and set the enabled tags
-        GoogleChartGenerator retVal = new GoogleChartGenerator(statsValueRetriever);
-        if (getTagNamesToGraph() != null) {
-            Set<String> enabledTags =
-                    new HashSet<String>(Arrays.asList(MiscUtils.splitAndTrim(getTagNamesToGraph(), ",")));
-            retVal.setEnabledTags(enabledTags);
+        GoogleChartGenerator retVal = new GoogleChartGenerator(graphType);
+        if (tagNamesToGraph != null) {
+            retVal.setEnabledTags(tagNamesToGraph);
         }
 
         return retVal;
@@ -208,8 +257,8 @@ public class GraphingStatisticsAppender extends AppenderSkeleton implements Appe
      * @param appenderName the name of the GraphingStatisticsAppender to return
      * @return the specified GraphingStatisticsAppender, or null if not found
      */
-    public static GraphingStatisticsAppender getAppenderByName(String appenderName) {
-        return APPENDERS_BY_NAME.get(appenderName);
+    public static GraphingStatisticsSink getSinkByName(String appenderName) {
+        return SINKS_BY_NAME.get(appenderName);
     }
 
     /**
@@ -217,62 +266,14 @@ public class GraphingStatisticsAppender extends AppenderSkeleton implements Appe
      *
      * @return The collection of GraphingStatisticsAppenders created in this VM.
      */
-    public static Collection<GraphingStatisticsAppender> getAllGraphingStatisticsAppenders() {
-        return Collections.unmodifiableCollection(APPENDERS_BY_NAME.values());
+    public static Collection<GraphingStatisticsSink> getAllGraphingStatisticsSinks() {
+        return Collections.unmodifiableCollection(SINKS_BY_NAME.values());
     }
 
-    // --- appender attachable methods ---
-
-    public void addAppender(Appender appender) {
-        synchronized (downstreamAppenders) {
-            downstreamAppenders.addAppender(appender);
-        }
-    }
-
-    public Enumeration getAllAppenders() {
-        synchronized (downstreamAppenders) {
-            return downstreamAppenders.getAllAppenders();
-        }
-    }
-
-    public Appender getAppender(String name) {
-        synchronized (downstreamAppenders) {
-            return downstreamAppenders.getAppender(name);
-        }
-    }
-
-    public boolean isAttached(Appender appender) {
-        synchronized (downstreamAppenders) {
-            return downstreamAppenders.isAttached(appender);
-        }
-    }
-
-    public void removeAllAppenders() {
-        synchronized (downstreamAppenders) {
-            downstreamAppenders.removeAllAppenders();
-        }
-    }
-
-    public void removeAppender(Appender appender) {
-        synchronized (downstreamAppenders) {
-            downstreamAppenders.removeAppender(appender);
-        }
-    }
-
-    public void removeAppender(String name) {
-        synchronized (downstreamAppenders) {
-            downstreamAppenders.removeAppender(name);
-        }
-    }
-
-    // --- appender methods ---
-
-    protected void append(LoggingEvent event) {
-        Object logMessage = event.getMessage();
-        if (logMessage instanceof GroupedTimingStatistics && chartGenerator != null) {
-            chartGenerator.appendData((GroupedTimingStatistics) logMessage);
+    public void handle(GroupedTimingStatistics event) {
+        if (chartGenerator != null) {
+            chartGenerator.appendData(event);
             hasUnflushedData = true;
-            lastAppendedEventLevel = event.getLevel();
 
             //output the graph if necessary to any attached appenders
             if ((numLoggedStatistics.incrementAndGet() % getDataPointsPerGraph()) == 0) {
@@ -281,40 +282,18 @@ public class GraphingStatisticsAppender extends AppenderSkeleton implements Appe
         }
     }
 
-    public boolean requiresLayout() {
-        return false;
+    public void stop() {
+        flush();
     }
 
-    public void close() {
-        //close any downstream appenders
-        synchronized (downstreamAppenders) {
-            flush();
-
-            for (Enumeration enumer = downstreamAppenders.getAllAppenders();
-                 enumer != null && enumer.hasMoreElements();) {
-                Appender appender = (Appender) enumer.nextElement();
-                appender.close();
-            }
-        }
-    }
-
-    // --- Flushable method ---
     /**
-     * This flush method writes the graph, with the data that exists at the time it is calld, to any attached appenders.
+     * This flush method writes the graph, with the data that exists at the time it is called, to any attached appenders.
      */
     public void flush() {
-        synchronized(downstreamAppenders) {
-            if (hasUnflushedData && downstreamAppenders.getAllAppenders() != null) {
-                downstreamAppenders.appendLoopOnAppenders(
-                        new LoggingEvent(Logger.class.getName(),
-                                         Logger.getLogger(StopWatch.DEFAULT_LOGGER_NAME),
-                                         System.currentTimeMillis(),
-                                         lastAppendedEventLevel,
-                                         chartGenerator.getChartUrl(),
-                                         null)
-                );
-                hasUnflushedData = false;
-            }
+        if (hasUnflushedData) {
+            hasUnflushedData = false;
+            log.info(chartGenerator.getChartUrl());
         }
     }
+
 }

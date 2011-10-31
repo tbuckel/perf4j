@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
+
+    <bean id="perf4j" class="org.perf4j.beans.SpringStopWatchInitializer">
+        <property name="sinks">
+            <list>
+                <bean class="org.perf4j.beans.sinks.LoggingTimingEventSink" />
+                <bean class="org.perf4j.beans.sinks.AsyncCoalescingStatisticsSink">
+                    <property name="statisticsSinks">
+                        <list>
+                            <bean class="org.perf4j.beans.sinks.statistics.GraphingStatisticsSink">
+                                <property name="name" value="test" />
+                                <property name="tagNamesToGraph" value="test1,test2" />
+                                <property name="graphType" value="COUNT" />
+                            </bean>
+                            <bean class="org.perf4j.beans.sinks.statistics.LoggingTimingStatisticsSink" />
+                            <bean class="org.perf4j.beans.sinks.statistics.JmxAttributeStatisticsSink">
+                                <property name="exposeTagsAutomatically" value="true" />
+                            </bean>
+                        </list>
+                    </property>
+                </bean>
+            </list>
+        </property>
+    </bean>
+
+</beans>
