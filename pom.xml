@@ -496,6 +496,7 @@
                                 <exclude>**/commonslog/**</exclude>
                                 <exclude>**/slf4j/**</exclude>
                                 <exclude>**/logback/**</exclude>
+                                <exclude>**/beans/**</exclude>
                             </excludes>
                         </configuration>
                     </execution>
@@ -513,6 +514,7 @@
                                 <exclude>**/commonslog/**</exclude>
                                 <exclude>**/slf4j/**</exclude>
                                 <exclude>**/logback/**</exclude>
+                                <exclude>**/beans/**</exclude>
                             </excludes>
                         </configuration>
                     </execution>
@@ -530,6 +532,7 @@
                                 <exclude>**/javalog/**</exclude>
                                 <exclude>**/slf4j/**</exclude>
                                 <exclude>**/logback/**</exclude>
+                                <exclude>**/beans/**</exclude>
                             </excludes>
                         </configuration>
                     </execution>
@@ -547,6 +550,7 @@
                                 <exclude>**/javalog/**</exclude>
                                 <exclude>**/commonslog/**</exclude>
                                 <exclude>**/logback/**</exclude>
+                                <exclude>**/beans/**</exclude>
                             </excludes>
                         </configuration>
                     </execution>
@@ -563,6 +567,25 @@
                                 <exclude>**/log4j/**</exclude>
                                 <exclude>**/javalog/**</exclude>
                                 <exclude>**/commonslog/**</exclude>
+                                <exclude>**/beans/**</exclude>
+                            </excludes>
+                        </configuration>
+                    </execution>
+                    <!-- This jar includes only the beans classes and NOT any of the logging framework classes -->
+                    <execution>
+                        <id>beansAspects</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <classifier>beansonly</classifier>
+                            <excludes>
+                                <exclude>**/log4j/**</exclude>
+                                <exclude>**/javalog/**</exclude>
+                                <exclude>**/commonslog/**</exclude>
+                                <exclude>**/logback/**</exclude>
+                                <exclude>**/slf4j/**</exclude>
                             </excludes>
                         </configuration>
                     </execution>
