@@ -20,7 +20,7 @@ import org.perf4j.StopWatch;
 /**
  * Sink for TimingEvents, i.e. stopped StopWatches.
  *
- * {@code TimingEventSink}s are usually managed by a {@link StopWatchSinkManager} which configures
+ * {@code TimingEventSink}s are usually managed by a {@link TimingEventSinkManager} which configures
  * the static {@link StopWatchFactory}.
  *
  * @author Thomas Buckel

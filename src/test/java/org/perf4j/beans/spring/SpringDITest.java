@@ -8,11 +8,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 /**
- * Created by IntelliJ IDEA.
- * User: Thomas
- * Date: 19/10/11
- * Time: 7:52 PM
- * To change this template use File | Settings | File Templates.
+ * @author Thomas Buckel
  */
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations="testContext.xml")

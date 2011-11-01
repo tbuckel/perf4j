@@ -20,6 +20,7 @@ import org.apache.commons.logging.LogFactory;
 import org.perf4j.StopWatch;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -28,11 +29,12 @@ import java.util.List;
  *
  * @author Thomas Buckel
  */
-public class StopWatchSinkManager implements TimingEventSink {
+public class TimingEventSinkManager implements TimingEventSink {
 
     private final Log log = LogFactory.getLog(getClass());
 
     private List<TimingEventSink> sinks = new ArrayList<TimingEventSink>();
+    private boolean running;
 
     public void setSinks(List<TimingEventSink> sinks) {
         this.sinks = sinks;
@@ -42,12 +44,27 @@ public class StopWatchSinkManager implements TimingEventSink {
         sinks.add(sink);
     }
 
+    public void removeSink(TimingEventSink sink) {
+        if (sinks.remove(sink) && running) {
+            sink.stop();
+        }
+    }
+
+    public List<TimingEventSink> getSinks() {
+        return Collections.unmodifiableList(sinks);
+    }
+
     // @PostConstruct
     public void start() {
         log.debug("Starting TimingEventSinks");
         for (TimingEventSink sink : sinks) {
-            sink.start();
+            try {
+                sink.start();
+            } catch (RuntimeException ex) {
+                log.error("Error starting TimingEventSink " + sink.getClass() + "/" + sink.toString(), ex);
+            }
         }
+        running = true;
     }
 
     public void onTimingEvent(StopWatch stopWatch, Throwable e) {
@@ -64,8 +81,13 @@ public class StopWatchSinkManager implements TimingEventSink {
     public void stop() {
         log.debug("Stopping TimingEventSinks");
         for (TimingEventSink sink : sinks) {
-            sink.stop();
+            try {
+                sink.stop();
+            } catch (RuntimeException ex) {
+                log.error("Error stopping TimingEventSink " + sink.getClass() + "/" + sink.toString(), ex);
+            }
         }
+        running = false;
     }
 
 }

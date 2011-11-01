@@ -49,6 +49,9 @@ public class BeanStopWatch extends LoggingStopWatch {
 
     @Override
     protected final void log(String stopWatchAsString, Throwable exception) {
+        // Although we don't use the String representation of the StopWatch here, the creation of the String
+        // is not a waste - it is the result of the stop method so there's no overhead as we have to fullfil the
+        // contract of StopWatch.
         sink.onTimingEvent(this, exception);
     }
 

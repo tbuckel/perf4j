@@ -25,7 +25,8 @@ import org.perf4j.LoggingStopWatch;
  */
 public final class StopWatchFactory {
 
-    private static TimingEventSink rootSink = new StopWatchSinkManager();
+    private static TimingEventSink rootSink = new TimingEventSinkManager();
+    private static Thread shutdownHook;
 
     private StopWatchFactory() {
     }
@@ -59,25 +60,40 @@ public final class StopWatchFactory {
 
     public static void startUp() {
         rootSink.start();
-        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+        shutdownHook = new Thread(new Runnable() {
             public void run() {
                 rootSink.stop();
             }
-        }));
+        });
+        Runtime.getRuntime().addShutdownHook(shutdownHook);
+    }
+
+    public static void shutdown() {
+        if (shutdownHook != null) {
+            Runtime.getRuntime().removeShutdownHook(shutdownHook);
+            shutdownHook = null;
+        }
+        rootSink.stop();
+    }
+
+    static boolean isRunning() {
+        return shutdownHook != null;
     }
 
     /**
      * Convenience method to add a {@link TimingEventSink} to the rootSink.
-     * Note: This only works if the {@code rootSink} is a {@link StopWatchSinkManager} which is usually the case.
+     * Note: This only works if the {@code rootSink} is a {@link TimingEventSinkManager} which is usually the case.
      *
      * @param timingEventSink  Sink to add.
      */
     public static void addTimingEventSink(TimingEventSink timingEventSink) {
-        if (rootSink instanceof StopWatchSinkManager) {
-            ((StopWatchSinkManager) rootSink).addSink(timingEventSink);
+        if (rootSink instanceof TimingEventSinkManager) {
+            ((TimingEventSinkManager) rootSink).addSink(timingEventSink);
         } else {
             throw new IllegalArgumentException("rootSink is not a StopWatchSinkManager");
         }
     }
+
+    // TODO Add Remove method?
 
 }

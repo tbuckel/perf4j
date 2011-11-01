@@ -9,11 +9,7 @@ import org.perf4j.beans.sinks.statistics.LoggingTimingStatisticsSink;
 import org.perf4j.helpers.StatsValueRetriever;
 
 /**
- * Created by IntelliJ IDEA.
- * User: Thomas
- * Date: 6/10/11
- * Time: 9:01 PM
- * To change this template use File | Settings | File Templates.
+ * @author Thomas Buckel
  */
 public class StopWatchFactoryUsage {
 

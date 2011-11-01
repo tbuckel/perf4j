@@ -39,11 +39,11 @@ import org.perf4j.beans.sinks.TimingStatisticsSink;
  */
 public class StopWatchConfigBuilder {
 
-    private final StopWatchSinkManager rootSinkManager;
+    private final TimingEventSinkManager rootSinkManager;
     private boolean hasAsyncStatisticsSink;
 
     public StopWatchConfigBuilder() {
-        this.rootSinkManager = new StopWatchSinkManager();
+        this.rootSinkManager = new TimingEventSinkManager();
     }
 
     public StopWatchConfigBuilder addSink(TimingEventSink sink) {

@@ -68,7 +68,7 @@ import java.util.List;
 public class SpringStopWatchInitializer implements InitializingBean, DisposableBean, BeanFactoryPostProcessor, PriorityOrdered {
 
     private List<TimingEventSink> sinks = new ArrayList<TimingEventSink>();
-    private StopWatchSinkManager manager;
+    private TimingEventSinkManager manager;
     private int order = Ordered.LOWEST_PRECEDENCE;
 
     public void setSinks(List<TimingEventSink> sinks) {
@@ -76,7 +76,7 @@ public class SpringStopWatchInitializer implements InitializingBean, DisposableB
     }
 
     public void afterPropertiesSet() {
-        manager = new StopWatchSinkManager();
+        manager = new TimingEventSinkManager();
         manager.setSinks(sinks);
         manager.start();
     }
